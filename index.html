@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CuacaNusantara - Prakiraan Cuaca Terkini & Akurat</title>
+  <meta name="description" content="Website pemantau cuaca modern dan akurat dengan prakiraan per jam, mingguan, dan deteksi lokasi otomatis.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌤️</text></svg>">
+  
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="theme-clouds-day">
+
+  <!-- Background Dynamic Canvas & Ambient Glow -->
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+  <div class="weather-particles" id="weatherParticles"></div>
+
+  <!-- Notification Toast -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Main App Wrapper -->
+  <div class="app-container">
+    
+    <!-- Header: Brand & Controls -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-icon">
+          <i data-lucide="cloud-sun"></i>
+        </div>
+        <div class="brand-text">
+          <h1>Cuaca<span>Nusantara</span></h1>
+          <p class="brand-tagline">Prakiraan Cuaca Real-Time</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Unit Toggle (°C / °F) -->
+        <div class="unit-toggle" id="unitToggle" title="Ganti Satuan Suhu">
+          <button class="unit-btn active" data-unit="c">°C</button>
+          <button class="unit-btn" data-unit="f">°F</button>
+        </div>
+
+        <!-- Geo Location Button -->
+        <button class="action-btn" id="btnGeolocation" title="Gunakan Lokasi Saat Ini">
+          <i data-lucide="crosshair"></i>
+          <span class="btn-text">Lokasi Saya</span>
+        </button>
+
+        <!-- Refresh Button -->
+        <button class="action-btn icon-only" id="btnRefresh" title="Muat Ulang Data">
+          <i data-lucide="refresh-cw"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Search Section -->
+    <section class="search-section">
+      <div class="search-wrapper">
+        <div class="search-bar">
+          <i data-lucide="search" class="search-icon"></i>
+          <input 
+            type="text" 
+            id="searchInput" 
+            placeholder="Cari nama kota atau wilayah (mis: Jakarta, Surabaya, Tokyo)..." 
+            autocomplete="off"
+            spellcheck="false"
+          >
+          <button class="search-clear-btn" id="searchClearBtn" title="Hapus pencarian">
+            <i data-lucide="x"></i>
+          </button>
+          <div class="search-spinner" id="searchSpinner"></div>
+        </div>
+
+        <!-- Autocomplete Suggestions Dropdown -->
+        <div class="suggestions-dropdown" id="suggestionsDropdown"></div>
+      </div>
+
+      <!-- Quick City Chips & Recent History -->
+      <div class="quick-access">
+        <div class="quick-chips" id="quickChips">
+          <span class="chips-label">Kota Populer:</span>
+          <button class="chip" data-city="Jakarta">Jakarta</button>
+          <button class="chip" data-city="Bandung">Bandung</button>
+          <button class="chip" data-city="Surabaya">Surabaya</button>
+          <button class="chip" data-city="Yogyakarta">Yogyakarta</button>
+          <button class="chip" data-city="Denpasar">Bali (Denpasar)</button>
+          <button class="chip" data-city="Medan">Medan</button>
+          <button class="chip" data-city="Tokyo">Tokyo</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Weather Dashboard -->
+    <main class="weather-dashboard" id="weatherDashboard">
+      
+      <!-- Loading Skeleton (Shown during fetch) -->
+      <div class="skeleton-layout" id="skeletonLayout">
+        <div class="skeleton-card skeleton-hero"></div>
+        <div class="skeleton-grid">
+          <div class="skeleton-card"></div>
+          <div class="skeleton-card"></div>
+          <div class="skeleton-card"></div>
+          <div class="skeleton-card"></div>
+        </div>
+      </div>
+
+      <!-- Actual Weather Content -->
+      <div class="dashboard-content" id="dashboardContent">
+        
+        <!-- Hero Weather Card: Current Status -->
+        <section class="card current-weather-card">
+          <div class="card-glass-glow"></div>
+          
+          <div class="current-top">
+            <div class="location-meta">
+              <div class="location-badge">
+                <i data-lucide="map-pin"></i>
+                <span id="locationName">Jakarta, Indonesia</span>
+              </div>
+              <p class="current-datetime" id="currentDateTime">Senin, 12 Oktober 2026 • 20:30 WIB</p>
+            </div>
+            
+            <div class="weather-badge" id="conditionPill">
+              <span class="pill-dot"></span>
+              <span id="conditionText">Berawan Sebagian</span>
+            </div>
+          </div>
+
+          <div class="current-middle">
+            <div class="temperature-wrapper">
+              <span class="current-temp" id="currentTemp">29</span>
+              <span class="temp-degree" id="tempUnitDisplay">°C</span>
+            </div>
+
+            <div class="hero-icon-container">
+              <div class="hero-weather-icon" id="heroWeatherIcon">
+                <i data-lucide="cloud-sun" class="animated-icon"></i>
+              </div>
+            </div>
+          </div>
+
+          <div class="current-bottom">
+            <div class="sub-stat">
+              <i data-lucide="thermometer"></i>
+              <span>Terasa seperti: <strong id="feelsLikeTemp">34°C</strong></span>
+            </div>
+            <div class="sub-stat-divider">•</div>
+            <div class="sub-stat">
+              <i data-lucide="arrow-down-up"></i>
+              <span>Rentang hari ini: <strong id="tempRange">24°C / 32°C</strong></span>
+            </div>
+            <div class="sub-stat-divider">•</div>
+            <div class="sub-stat">
+              <i data-lucide="cloud-rain"></i>
+              <span>Curah hujan: <strong id="precipitationAmt">0.0 mm</strong></span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Highlights Grid: Detailed Metrics -->
+        <section class="section-container">
+          <div class="section-header">
+            <div class="section-title">
+              <i data-lucide="gauge"></i>
+              <h2>Rincian Kondisi Hari Ini</h2>
+            </div>
+          </div>
+
+          <div class="highlights-grid">
+            <!-- Wind -->
+            <div class="card highlight-card">
+              <div class="hl-top">
+                <span class="hl-title">Kecepatan Angin</span>
+                <i data-lucide="wind" class="hl-icon"></i>
+              </div>
+              <div class="hl-value-group">
+                <span class="hl-value" id="windSpeed">12</span>
+                <span class="hl-unit">km/jam</span>
+              </div>
+              <div class="hl-footer">
+                <i data-lucide="compass" class="mini-icon"></i>
+                <span id="windDirection">Arah: Tenggara (135°)</span>
+              </div>
+            </div>
+
+            <!-- Humidity -->
+            <div class="card highlight-card">
+              <div class="hl-top">
+                <span class="hl-title">Kelembapan</span>
+                <i data-lucide="droplets" class="hl-icon"></i>
+              </div>
+              <div class="hl-value-group">
+                <span class="hl-value" id="humidity">75</span>
+                <span class="hl-unit">%</span>
+              </div>
+              <div class="hl-progress-bar">
+                <div class="progress-fill" id="humidityBar" style="width: 75%;"></div>
+              </div>
+              <div class="hl-footer">
+                <span id="humidityStatus">Cukup lembap</span>
+              </div>
+            </div>
+
+            <!-- UV Index -->
+            <div class="card highlight-card">
+              <div class="hl-top">
+                <span class="hl-title">Indeks UV</span>
+                <i data-lucide="sun" class="hl-icon"></i>
+              </div>
+              <div class="hl-value-group">
+                <span class="hl-value" id="uvIndex">3.2</span>
+                <span class="hl-unit" id="uvBadge">Sedang</span>
+              </div>
+              <div class="hl-progress-bar">
+                <div class="progress-fill uv-fill" id="uvBar" style="width: 32%;"></div>
+              </div>
+              <div class="hl-footer">
+                <span id="uvAdvice">Gunakan tabir surya di luar ruangan</span>
+              </div>
+            </div>
+
+            <!-- Air Pressure -->
+            <div class="card highlight-card">
+              <div class="hl-top">
+                <span class="hl-title">Tekanan Udara</span>
+                <i data-lucide="activity" class="hl-icon"></i>
+              </div>
+              <div class="hl-value-group">
+                <span class="hl-value" id="airPressure">1012</span>
+                <span class="hl-unit">hPa</span>
+              </div>
+              <div class="hl-footer">
+                <span id="pressureStatus">Normal dan stabil</span>
+              </div>
+            </div>
+
+            <!-- Sunrise & Sunset -->
+            <div class="card highlight-card span-2-col">
+              <div class="hl-top">
+                <span class="hl-title">Matahari Terbit & Terbenam</span>
+                <i data-lucide="sun-medium" class="hl-icon"></i>
+              </div>
+              <div class="sun-times-grid">
+                <div class="sun-item">
+                  <div class="sun-icon sunrise-color">
+                    <i data-lucide="sunrise"></i>
+                  </div>
+                  <div>
+                    <span class="sun-label">Matahari Terbit</span>
+                    <strong class="sun-time" id="sunriseTime">05:42</strong>
+                  </div>
+                </div>
+                <div class="sun-item">
+                  <div class="sun-icon sunset-color">
+                    <i data-lucide="sunset"></i>
+                  </div>
+                  <div>
+                    <span class="sun-label">Matahari Terbenam</span>
+                    <strong class="sun-time" id="sunsetTime">17:51</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Weather Tip / Advisory -->
+            <div class="card highlight-card span-2-col tip-card">
+              <div class="hl-top">
+                <span class="hl-title">Tips Aktivitas Cuaca</span>
+                <i data-lucide="sparkles" class="hl-icon tip-icon"></i>
+              </div>
+              <div class="tip-body">
+                <p id="weatherTipText">Cuaca nyaman untuk beraktivitas luar ruangan. Tetap minum air yang cukup!</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Hourly Forecast -->
+        <section class="section-container">
+          <div class="section-header">
+            <div class="section-title">
+              <i data-lucide="clock"></i>
+              <h2>Prakiraan Cuaca Per Jam (24 Jam)</h2>
+            </div>
+            <div class="scroll-buttons">
+              <button class="scroll-btn" id="btnScrollLeft" title="Geser ke kiri">
+                <i data-lucide="chevron-left"></i>
+              </button>
+              <button class="scroll-btn" id="btnScrollRight" title="Geser ke kanan">
+                <i data-lucide="chevron-right"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="hourly-scroll-container" id="hourlyForecastContainer">
+            <!-- Hourly cards dynamically injected here -->
+          </div>
+        </section>
+
+        <!-- 7-Day Forecast -->
+        <section class="section-container">
+          <div class="section-header">
+            <div class="section-title">
+              <i data-lucide="calendar"></i>
+              <h2>Prakiraan 7 Hari Kedepan</h2>
+            </div>
+          </div>
+
+          <div class="card daily-forecast-card">
+            <div class="daily-list" id="dailyForecastList">
+              <!-- Daily rows dynamically injected here -->
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <div class="footer-content">
+        <p>© 2026 <strong>CuacaNusantara</strong>. Data cuaca real-time didukung oleh <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo API</a>.</p>
+        <p class="footer-sub">Didesain dengan HTML5, Modern CSS, dan Vanilla JavaScript.</p>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- Main JavaScript Logic -->
+  <script src="app.js"></script>
+</body>
+</html>
